@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Take Snapshot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #080b10;
+    --card:      #0d1117;
+    --card2:     #131920;
+    --border:    #1e2a38;
+    --border2:   #253347;
+    --cyan:      #00e5ff;
+    --cyan-dim:  rgba(0,229,255,0.08);
+    --cyan-glow: rgba(0,229,255,0.22);
+    --lime:      #b8ff57;
+    --lime-dim:  rgba(184,255,87,0.08);
+    --amber:     #ffb830;
+    --red:       #ff4d6a;
+    --txt:       #dde6f0;
+    --txt2:      #6b8099;
+    --txt3:      #3a4f63;
+    --mono:      'JetBrains Mono', monospace;
+    --display:   'Syne', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    /* subtle grid bg */
+    background-image:
+      linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 560px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,229,255,0.04);
+  }
+
+  /* ── TOP BAR ── */
+  .panel-topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+
+  .topbar-dots {
+    display: flex; gap: 6px;
+  }
+  .topbar-dots span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border2);
+  }
+  .topbar-title {
+    font-size: 11px;
+    color: var(--txt2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-left: 4px;
+  }
+  .topbar-badge {
+    margin-left: auto;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    background: var(--cyan-dim);
+    border: 1px solid rgba(0,229,255,0.15);
+    padding: 3px 9px;
+    border-radius: 3px;
+  }
+
+  /* ── HEADER SECTION ── */
+  .panel-header {
+    padding: 32px 28px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .feature-label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .feature-label::before {
+    content: '';
+    width: 16px; height: 1px;
+    background: var(--cyan);
+    display: inline-block;
+  }
+
+  .panel-header h1 {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--txt);
+    line-height: 1.15;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .panel-header h1 em {
+    font-style: normal;
+    color: var(--cyan);
+  }
+
+  .panel-header p {
+    font-size: 12px;
+    color: var(--txt2);
+    line-height: 1.7;
+    max-width: 420px;
+  }
+
+  /* ── CAPABILITY PILLS ── */
+  .capabilities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .cap-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 6px 11px;
+    font-size: 11px;
+    color: var(--txt2);
+    transition: all 0.2s ease;
+  }
+  .cap-pill .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--txt3);
+    transition: background 0.2s;
+  }
+  .cap-pill:hover {
+    border-color: var(--border2);
+    color: var(--txt);
+  }
+  .cap-pill:hover .dot { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+
+  /* ── INTEGRITY BADGE ── */
+  .integrity-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: var(--lime-dim);
+    border: 1px solid rgba(184,255,87,0.14);
+    border-radius: 6px;
+  }
+  .integrity-icon {
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .integrity-text {
+    font-size: 11px;
+    color: var(--lime);
+    line-height: 1.5;
+  }
+  .integrity-text strong {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 1px;
+  }
+  .integrity-text span {
+    opacity: 0.7;
+    font-size: 10px;
+  }
+
+  /* ── INPUT SECTION ── */
+  .panel-input {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .input-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--txt2);
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .snap-input {
+    flex: 1;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 11px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--txt);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    caret-color: var(--cyan);
+  }
+  .snap-input::placeholder { color: var(--txt3); }
+  .snap-input:focus {
+    border-color: rgba(0,229,255,0.4);
+    box-shadow: 0 0 0 3px var(--cyan-dim);
+  }
+
+  .snap-btn {
+    position: relative;
+    background: var(--cyan);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 11px 22px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .snap-btn:hover:not(:disabled) {
+    background: #33eaff;
+    box-shadow: 0 0 28px var(--cyan-glow), 0 4px 16px rgba(0,0,0,0.4);
+    transform: translateY(-1px);
+  }
+  .snap-btn:active:not(:disabled) { transform: translateY(0); }
+  .snap-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ripple */
+  .snap-btn .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.2);
+    transform: scale(0);
+    animation: ripple 0.5s ease-out;
+    pointer-events: none;
+  }
+  @keyframes ripple {
+    to { transform: scale(3); opacity: 0; }
+  }
+
+  /* ── PROGRESS / STATUS ── */
+  .progress-section {
+    padding: 0 28px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s ease;
+  }
+  .progress-section.active {
+    max-height: 260px;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 11px;
+    color: var(--txt2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .progress-pct {
+    color: var(--cyan);
+    font-weight: 600;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .progress-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), #5bf1ff);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.35s ease;
+    box-shadow: 0 0 10px var(--cyan-glow);
+  }
+
+  .step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--txt3);
+    transition: color 0.25s;
+  }
+  .step.done  { color: var(--txt2); }
+  .step.active { color: var(--cyan); }
+
+  .step-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+    color: var(--txt3);
+    transition: all 0.25s;
+  }
+  .step.done  .step-icon { background: rgba(184,255,87,0.1); border-color: var(--lime); color: var(--lime); }
+  .step.active .step-icon { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--cyan-glow); }
+    50% { box-shadow: 0 0 0 4px transparent; }
+  }
+
+  /* ── RESULT ── */
+  .result-section {
+    padding: 0 28px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s ease;
+  }
+  .result-section.show {
+    max-height: 300px;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-success {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .result-checkmark {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--lime-dim);
+    border: 1px solid rgba(184,255,87,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    animation: pop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes pop {
+    from { transform: scale(0); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  .result-info { flex: 1; }
+  .result-name {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--txt);
+    margin-bottom: 4px;
+  }
+  .result-time {
+    font-size: 11px;
+    color: var(--txt2);
+    margin-bottom: 12px;
+  }
+
+  .result-stats {
+    display: flex;
+    gap: 14px;
+  }
+  .rstat {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 12px;
+    text-align: center;
+  }
+  .rstat-val {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--cyan);
+    display: block;
+  }
+  .rstat-lbl {
+    font-size: 9px;
+    color: var(--txt3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .checksum-row {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: var(--lime-dim);
+    border: 1px solid rgba(184,255,87,0.12);
+    border-radius: 5px;
+    font-size: 10px;
+    color: var(--lime);
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .checksum-row .cs-label {
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  .checksum-val {
+    font-weight: 600;
+    word-break: break-all;
+  }
+
+  /* ── FOOTER ── */
+  .panel-footer {
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-hint {
+    font-size: 10px;
+    color: var(--txt3);
+    letter-spacing: 0.06em;
+  }
+  .footer-hint kbd {
+    background: var(--card2);
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--txt2);
+  }
+  .footer-status {
+    font-size: 10px;
+    color: var(--txt3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--lime);
+    box-shadow: 0 0 8px var(--lime);
+    animation: blink 2.5s infinite;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<div class="panel">
+
+  <!-- Top bar -->
+  <div class="panel-topbar">
+    <div class="topbar-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <span class="topbar-title">snapshot-capture.js</span>
+    <span class="topbar-badge">SHA-256 Signed</span>
+    <button onclick="window.location.href='index.html'" style="margin-left:auto;background:none;border:1px solid #1e2a38;border-radius:4px;color:#6b8099;font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 10px;cursor:pointer;letter-spacing:0.08em;transition:all 0.15s" onmouseover="this.style.borderColor='#00e5ff';this.style.color='#00e5ff'" onmouseout="this.style.borderColor='#1e2a38';this.style.color='#6b8099'">← Back</button>
+  </div>
+
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="feature-label">Feature</div>
+    <h1>Take a System<br><em>Snapshot</em></h1>
+    <p>Captures a complete point-in-time record of this machine's state. Every snapshot is cryptographically signed to guarantee integrity.</p>
+
+    <div class="capabilities">
+      <div class="cap-pill"><div class="dot"></div> CPU & Memory</div>
+      <div class="cap-pill"><div class="dot"></div> OS & Kernel</div>
+      <div class="cap-pill"><div class="dot"></div> Disk Layout</div>
+      <div class="cap-pill"><div class="dot"></div> Network Interfaces</div>
+      <div class="cap-pill"><div class="dot"></div> Open Ports</div>
+      <div class="cap-pill"><div class="dot"></div> All Processes</div>
+    </div>
+
+    <div class="integrity-row">
+      <div class="integrity-icon">🔒</div>
+      <div class="integrity-text">
+        <strong>SHA-256 Integrity Signing</strong>
+        <span>Every snapshot is hashed and signed at capture time. Tampering is detectable.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="panel-input">
+    <label class="input-label" for="snapName">Snapshot Name</label>
+    <div class="input-row">
+      <input
+        class="snap-input"
+        id="snapName"
+        type="text"
+        placeholder="e.g. baseline_before_deploy"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="snap-btn" id="snapBtn">⊕ Capture</button>
+    </div>
+  </div>
+
+  <!-- Progress (shown during capture) -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-header">
+      <span>Collecting system data</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="step-list" id="stepList">
+      <div class="step" data-step="cpu">
+        <div class="step-icon">○</div>
+        <span>CPU information</span>
+      </div>
+      <div class="step" data-step="memory">
+        <div class="step-icon">○</div>
+        <span>Memory usage</span>
+      </div>
+      <div class="step" data-step="os">
+        <div class="step-icon">○</div>
+        <span>OS & kernel details</span>
+      </div>
+      <div class="step" data-step="disk">
+        <div class="step-icon">○</div>
+        <span>Disk layout & filesystems</span>
+      </div>
+      <div class="step" data-step="network">
+        <div class="step-icon">○</div>
+        <span>Network interfaces & open ports</span>
+      </div>
+      <div class="step" data-step="processes">
+        <div class="step-icon">○</div>
+        <span>Running processes</span>
+      </div>
+      <div class="step" data-step="sign">
+        <div class="step-icon">○</div>
+        <span>SHA-256 signing & save</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result (shown after success) -->
+  <div class="result-section" id="resultSection">
+    <div class="result-success">
+      <div class="result-checkmark">✓</div>
+      <div class="result-info">
+        <div class="result-name" id="resultName">—</div>
+        <div class="result-time" id="resultTime">—</div>
+        <div class="result-stats">
+          <div class="rstat">
+            <span class="rstat-val" id="rstatProcs">—</span>
+            <span class="rstat-lbl">Processes</span>
+          </div>
+          <div class="rstat">
+            <span class="rstat-val" id="rstatPorts">—</span>
+            <span class="rstat-lbl">Open Ports</span>
+          </div>
+          <div class="rstat">
+            <span class="rstat-val" id="rstatIfaces">—</span>
+            <span class="rstat-lbl">Interfaces</span>
+          </div>
+        </div>
+        <div class="checksum-row" id="checksumRow">
+          <span class="cs-label">SHA256</span>
+          <span class="checksum-val" id="checksumVal">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="panel-footer">
+    <div class="footer-hint">Press <kbd>Enter</kbd> to capture</div>
+    <div class="footer-status">
+      <div class="status-dot"></div>
+      <span id="footerStatus">Ready</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const snapBtn       = document.getElementById('snapBtn');
+  const snapInput     = document.getElementById('snapName');
+  const progressSec   = document.getElementById('progressSection');
+  const resultSec     = document.getElementById('resultSection');
+  const progressFill  = document.getElementById('progressFill');
+  const progressPct   = document.getElementById('progressPct');
+  const footerStatus  = document.getElementById('footerStatus');
+  const steps         = [...document.querySelectorAll('.step[data-step]')];
+
+  const STEP_KEYS = ['cpu','memory','os','disk','network','processes','sign'];
+
+  function setStep(active) {
+    const idx = STEP_KEYS.indexOf(active);
+    steps.forEach((el, i) => {
+      el.classList.remove('active','done');
+      if (i < idx)       el.classList.add('done'),   el.querySelector('.step-icon').textContent = '✓';
+      else if (i === idx) el.classList.add('active'), el.querySelector('.step-icon').textContent = '●';
+      else                el.querySelector('.step-icon').textContent = '○';
+    });
+    const pct = Math.round(((idx) / STEP_KEYS.length) * 100);
+    progressFill.style.width = pct + '%';
+    progressPct.textContent = pct + '%';
+  }
+
+  function markAllDone() {
+    steps.forEach(el => {
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.querySelector('.step-icon').textContent = '✓';
+    });
+    progressFill.style.width = '100%';
+    progressPct.textContent = '100%';
+  }
+
+  function addRipple(e) {
+    const btn = e.currentTarget;
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    const size = Math.max(btn.offsetWidth, btn.offsetHeight);
+    const rect = btn.getBoundingClientRect();
+    r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+    btn.appendChild(r);
+    setTimeout(() => r.remove(), 600);
+  }
+
+  async function runCapture() {
+    const name = snapInput.value.trim() || `snapshot_${Date.now()}`;
+    snapInput.value = '';
+
+    // Reset UI
+    resultSec.classList.remove('show');
+    steps.forEach(el => {
+      el.classList.remove('active','done');
+      el.querySelector('.step-icon').textContent = '○';
+    });
+    progressFill.style.width = '0%';
+    progressPct.textContent = '0%';
+
+    snapBtn.disabled = true;
+    snapInput.disabled = true;
+    footerStatus.textContent = 'Capturing...';
+    progressSec.classList.add('active');
+
+    // If real IPC is available (Electron), call it and animate based on timing
+    if (window.ipc) {
+      // Kick off steps animation while actual capture runs
+      const stepDelay = [0, 300, 600, 900, 1300, 1700, 2200];
+      STEP_KEYS.forEach((key, i) => {
+        setTimeout(() => setStep(key), stepDelay[i]);
+      });
+
+      try {
+        const data = await window.ipc.invoke('take-snapshot', name);
+        markAllDone();
+        showResult(name, data);
+      } catch (e) {
+        footerStatus.textContent = 'Error';
+        progressSec.classList.remove('active');
+        snapBtn.disabled = false;
+        snapInput.disabled = false;
+        console.error(e);
+      }
+    } else {
+      // Demo mode: simulate timing
+      const delays = [0, 400, 800, 1200, 1700, 2200, 2800];
+      for (let i = 0; i < STEP_KEYS.length; i++) {
+        await delay(delays[i] - (i > 0 ? delays[i-1] : 0));
+        setStep(STEP_KEYS[i]);
+      }
+      await delay(500);
+      markAllDone();
+
+      // Fake data for demo
+      const fakeData = {
+        metadata: { timestamp: new Date().toISOString() },
+        running_processes: Array(187),
+        network: { listening_ports: Array(23), interfaces: Array(4) },
+        integrity: { sha256_checksum: Array(64).fill(0).map(()=>'0123456789abcdef'[Math.random()*16|0]).join('') }
+      };
+      showResult(name, fakeData);
+    }
+  }
+
+  function showResult(name, data) {
+    progressSec.classList.remove('active');
+
+    document.getElementById('resultName').textContent = name;
+    document.getElementById('resultTime').textContent =
+      new Date(data?.metadata?.timestamp || Date.now()).toLocaleString();
+    document.getElementById('rstatProcs').textContent =
+      (data?.running_processes?.length ?? '—');
+    document.getElementById('rstatPorts').textContent =
+      (data?.network?.listening_ports?.length ?? '—');
+    document.getElementById('rstatIfaces').textContent =
+      (data?.network?.interfaces?.length ?? '—');
+
+    const cs = data?.integrity?.sha256_checksum ?? '';
+    document.getElementById('checksumVal').textContent =
+      cs ? cs.substring(0, 32) + '…' : '—';
+
+    resultSec.classList.add('show');
+    footerStatus.textContent = 'Snapshot saved';
+    snapBtn.disabled = false;
+    snapInput.disabled = false;
+    snapBtn.textContent = '⊕ Capture';
+  }
+
+  function delay(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  snapBtn.addEventListener('click', (e) => {
+    addRipple(e);
+    runCapture();
+  });
+
+  snapInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !snapBtn.disabled) runCapture();
+  });
+</script>
+</body>
+</html>

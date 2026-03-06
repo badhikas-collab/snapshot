@@ -10,66 +10,79 @@
 <body>
   <div class="container">
     <header>
-      <h1>📸 System Snapshot Viewer</h1>
-      <p class="subtitle">View and manage system snapshots</p>
+      <div class="header-left">
+        <div class="header-icon">⬡</div>
+        <h1>Snapshot Viewer</h1>
+        <span class="header-badge">v2.0</span>
+      </div>
+      <div class="header-meta" id="headerMeta">READY</div>
     </header>
 
     <div class="main-content">
       <div class="sidebar">
         <div class="snapshot-controls">
-          <button id="newSnapshotBtn" class="btn btn-primary">
-            📷 Take New Snapshot
+          <button id="newSnapshotBtn" class="btn btn-primary" onclick="window.location.href='snapshot-panel.html'">
+            + Take Snapshot
           </button>
-          <input type="text" id="snapshotName" placeholder="Enter snapshot name..." class="input-field" />
+          <input type="text" id="snapshotName" placeholder="snapshot name..." class="input-field" />
         </div>
 
         <div class="snapshot-list-container">
-          <h2>Saved Snapshots</h2>
+          <div class="snapshot-list-header">
+            <h2>Snapshots</h2>
+            <span class="snapshot-count" id="snapshotCount">0</span>
+          </div>
           <div id="snapshotList" class="snapshot-list">
-            <p class="loading">Loading snapshots...</p>
+            <p class="loading">loading...</p>
           </div>
         </div>
       </div>
 
       <div class="main-view">
         <div id="emptyState" class="empty-state">
-          <p>👈 Select a snapshot to view details</p>
+          <div class="empty-state-icon">⬡</div>
+          <p>Select a snapshot to inspect</p>
         </div>
 
         <div id="snapshotDetail" class="snapshot-detail" style="display: none;">
           <div class="detail-header">
-            <div>
-              <h2 id="detailTitle">Snapshot Details</h2>
+            <div class="detail-title-block">
+              <h2 id="detailTitle">Snapshot</h2>
               <p id="detailTimestamp" class="timestamp"></p>
-              <div id="integrityInfo" class="integrity-info"></div>
+              <div id="integrityInfo" class="integrity-info" style="display:none;"></div>
             </div>
             <div class="header-buttons">
-              <select id="compareSelect" class="input-field" style="max-width: 200px;">
-                <option value="">Compare with...</option>
-              </select>
-              <button id="compareBtn" class="btn btn-primary">📊 Compare</button>
-                <button id="uploadBtn" class="btn btn-upload">☁️ Upload</button>
-              <button id="deleteBtn" class="btn btn-danger">🗑️ Delete</button>
+              <div class="compare-select-wrapper">
+                <select id="compareSelect" class="input-field">
+                  <option value="">Compare with...</option>
+                </select>
+              </div>
+              <button id="compareBtn" class="btn btn-secondary">Compare</button>
+              <button id="uploadBtn" class="btn btn-upload">↑ Upload</button>
+              <button id="deleteBtn" class="btn btn-danger">✕ Delete</button>
             </div>
           </div>
 
           <div id="comparisonView" class="comparison-view" style="display: none;">
-            <h3>📊 Comparison Results</h3>
+            <div class="comparison-header">
+              <h3>// Diff Results</h3>
+              <button class="btn-close" id="closeComparisonBtn">close</button>
+            </div>
             <div class="comparison-grid">
               <div class="comparison-card">
-                <h4>🆕 New Processes</h4>
+                <h4>New Processes</h4>
                 <div id="newProcessesList" class="comparison-list"></div>
               </div>
               <div class="comparison-card">
-                <h4>❌ Removed Processes</h4>
+                <h4>Removed Processes</h4>
                 <div id="removedProcessesList" class="comparison-list"></div>
               </div>
               <div class="comparison-card">
-                <h4>📈 Process Changes</h4>
+                <h4>Resource Changes</h4>
                 <div id="processChangesList" class="comparison-list"></div>
               </div>
               <div class="comparison-card">
-                <h4>🔌 New Listening Ports</h4>
+                <h4>New Open Ports</h4>
                 <div id="newPortsList" class="comparison-list"></div>
               </div>
             </div>
@@ -77,61 +90,70 @@
 
           <div class="detail-content">
             <section class="system-info">
-              <h3>💻 System Information</h3>
+              <div class="section-header">
+                <h3>System</h3>
+              </div>
               <div class="info-grid">
                 <div class="info-item">
                   <span class="label">CPU Manufacturer</span>
-                  <span id="cpuManufacturer" class="value">-</span>
+                  <span id="cpuManufacturer" class="value">—</span>
                 </div>
                 <div class="info-item">
-                  <span class="label">CPU Brand</span>
-                  <span id="cpuBrand" class="value">-</span>
+                  <span class="label">CPU Model</span>
+                  <span id="cpuBrand" class="value">—</span>
                 </div>
                 <div class="info-item">
-                  <span class="label">CPU Cores</span>
-                  <span id="cpuCores" class="value">-</span>
+                  <span class="label">Cores</span>
+                  <span id="cpuCores" class="value">—</span>
                 </div>
                 <div class="info-item">
-                  <span class="label">Total Memory</span>
-                  <span id="totalMemory" class="value">-</span>
+                  <span class="label">Memory</span>
+                  <span id="totalMemory" class="value">—</span>
                 </div>
                 <div class="info-item">
                   <span class="label">OS</span>
-                  <span id="osInfo" class="value">-</span>
+                  <span id="osInfo" class="value">—</span>
                 </div>
                 <div class="info-item">
-                  <span class="label">Total Disk</span>
-                  <span id="diskInfo" class="value">-</span>
+                  <span class="label">Disk Total</span>
+                  <span id="diskInfo" class="value">—</span>
                 </div>
               </div>
             </section>
 
             <section class="network-section">
-              <h3>🌐 Network</h3>
+              <div class="section-header">
+                <h3>Network</h3>
+              </div>
               <div class="network-info">
                 <div>
-                  <strong>Network Interfaces:</strong>
+                  <div class="network-subheader">Interfaces</div>
                   <div id="networkInterfaces" class="details-list"></div>
                 </div>
                 <div>
-                  <strong>Listening Ports:</strong>
+                  <div class="network-subheader">Listening Ports</div>
                   <div id="listeningPorts" class="details-list"></div>
                 </div>
               </div>
             </section>
 
             <section class="filesystem-section">
-              <h3>💾 File System</h3>
+              <div class="section-header">
+                <h3>File System</h3>
+              </div>
               <div id="filesystemInfo" class="details-list"></div>
             </section>
 
             <section class="processes-section">
-              <h3>⚙️ Running Processes</h3>
+              <div class="section-header">
+                <h3>Processes</h3>
+              </div>
               <div class="search-bar">
-                <input type="text" id="processSearch" placeholder="Search processes..." class="input-field" />
+                <span class="search-icon">/</span>
+                <input type="text" id="processSearch" placeholder="filter processes..." class="input-field" />
               </div>
               <div id="processList" class="process-list">
-                <p class="loading">Loading processes...</p>
+                <p class="loading">loading...</p>
               </div>
             </section>
           </div>
@@ -139,6 +161,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
 </body>
 
 </html>
