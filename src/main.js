@@ -5,33 +5,11 @@ const crypto = require('crypto');
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const https = require('https');
 const http = require('http');
-const dotenv = require('dotenv');
-
-// Load env from common dev locations; keep existing process env values intact.
-[
-  path.join(process.cwd(), '.env'),
-  path.join(process.cwd(), '.env.local'),
-  path.join(__dirname, '../../.env'),
-  path.join(__dirname, '../../.env.local'),
-].forEach((envPath) => {
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath, override: false });
-  }
-});
-
-const DEFAULT_SNAPSHOT_API_KEY = 'sb_publishable_4cRWlmo693rt6aPU8Tmqjg_ZDnfLWJV';
+const HARDCODED_SNAPSHOT_SERVER_URL = 'https://instasnapshot.vercel.app';
+const HARDCODED_SNAPSHOT_API_KEY = 'EVERLIJvivjSNFSVUFDshgognSGAGFOurgergAGBUeraogferogVbneRAOBO';
 
 function resolveSnapshotServerUrl() {
-  const configured = (
-    process.env.SNAPSHOT_SERVER_URL ||
-    process.env.SNAPSHOT_SERVER_DOMAIN ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    ''
-  ).trim();
-
-  if (!configured) return null;
-
-  const candidate = configured;
+  const candidate = HARDCODED_SNAPSHOT_SERVER_URL;
   const hasProtocol = /^https?:\/\//i.test(candidate);
   const normalized = hasProtocol ? candidate : `https://${candidate}`;
 
@@ -384,11 +362,11 @@ ipcMain.handle('upload-snapshot', async (event, filename) => {
 
   try {
     const serverUrl = resolveSnapshotServerUrl();
-    const apiKey = process.env.SNAPSHOT_API_KEY || DEFAULT_SNAPSHOT_API_KEY;
+    const apiKey = HARDCODED_SNAPSHOT_API_KEY;
     if (!serverUrl) {
       return {
         success: false,
-        error: 'Set SNAPSHOT_SERVER_URL (or SNAPSHOT_SERVER_DOMAIN) to your deployed domain; localhost is disabled.'
+        error: 'Hardcoded snapshot server URL is invalid or points to localhost.'
       };
     }
 
@@ -422,7 +400,7 @@ ipcMain.handle('upload-snapshot', async (event, filename) => {
 ipcMain.handle('list-remote-snapshots', async (event) => {
   try {
     const serverUrl = resolveSnapshotServerUrl();
-    const apiKey = process.env.SNAPSHOT_API_KEY || DEFAULT_SNAPSHOT_API_KEY;
+    const apiKey = HARDCODED_SNAPSHOT_API_KEY;
 
     if (!serverUrl || !apiKey) return [];
 
