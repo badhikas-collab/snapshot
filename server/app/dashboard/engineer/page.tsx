@@ -60,7 +60,7 @@ export default function EngineerPage() {
     };
 
     loadMachines();
-    const interval = setInterval(loadMachines, 3000);
+    const interval = setInterval(loadMachines, 60000); // poll every 60s, not 3s
 
     return () => {
       isMounted = false;

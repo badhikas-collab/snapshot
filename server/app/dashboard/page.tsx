@@ -169,7 +169,7 @@ export default function Dashboard() {
     };
 
     loadSnapshots();
-    const interval = setInterval(loadSnapshots, 3000);
+    const interval = setInterval(loadSnapshots, 60000); // poll every 60s, not 3s
 
     return () => {
       isMounted = false;

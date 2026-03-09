@@ -64,9 +64,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Only fetch lightweight metadata columns — never pull the full data blob
   const { data, error } = await getSupabase()
     .from('snapshots')
-    .select('id, machine_id, machine_name, snapshot_name, timestamp, data')
+    .select('id, machine_id, machine_name, snapshot_name, timestamp, snapshot_status, snapshot_size_bytes, snapshot_error')
     .order('timestamp', { ascending: false });
 
   if (error) {
@@ -83,7 +84,7 @@ export async function GET(req: NextRequest) {
 
   for (const row of data || []) {
     const existing = machineMap.get(row.machine_id);
-    const status = extractStatus(row.data);
+    const status = normalizeStatus(row.snapshot_status);
 
     if (existing) {
       existing.snapshots.push(row);
@@ -101,7 +102,6 @@ export async function GET(req: NextRequest) {
   // Build response with aggregated data
   const machines = Array.from(machineMap.values()).map(machine => {
     const latestSnapshot = machine.snapshots[0];
-    const latestData = latestSnapshot?.data;
 
     return {
       machine_id: machine.machine_id,
@@ -111,17 +111,8 @@ export async function GET(req: NextRequest) {
       latest_snapshot_id: latestSnapshot?.id,
       latest_timestamp: latestSnapshot?.timestamp,
       health_status: computeHealthStatus(latestSnapshot?.timestamp || '', machine.statuses),
-      latest_memory_gb: latestData?.system?.used_memory_gb ?? null,
-      total_memory_gb: latestData?.system?.total_memory_gb ?? null,
-      latest_cpu_cores: latestData?.system?.cpu_cores ?? null,
-      cpu_brand: latestData?.system?.cpu_brand ?? null,
-      os_info: latestData?.system?.os_distro
-        ? `${latestData.system.os_distro} ${latestData.system.os_release || ''}`
-        : null,
-      active_process_count: latestData?.running_processes?.length ?? 0,
-      listening_port_count: latestData?.network?.listening_ports?.length ?? 0,
       largest_snapshot_bytes: machine.snapshots.reduce((max, snap) => {
-        return Math.max(max, estimateSnapshotSizeBytes(snap.data));
+        return Math.max(max, snap.snapshot_size_bytes ?? 0);
       }, 0),
     };
   });
