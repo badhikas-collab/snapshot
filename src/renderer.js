@@ -60,18 +60,18 @@ function buildUI() {
         <p class="subtitle">View and manage system snapshots</p>
         <div class="header-row">
           <div>
-            <h1>📸 System Snapshot Viewer</h1>
+            <h1>System Snapshot Viewer</h1>
             <p class="subtitle">View and manage system snapshots</p>
           </div>
-          <button id="settingsBtn" class="btn btn-settings" title="Settings">⚙️</button>
+          <button id="settingsBtn" class="btn btn-settings" title="Settings"></button>
         </div>
       </header>
 
       <div id="settingsPanel" class="settings-panel" style="display: none;">
         <div class="settings-content">
           <div class="settings-header">
-            <h3>⚙️ Settings</h3>
-            <button id="closeSettingsBtn" class="btn btn-close-settings">✕</button>
+            <h3>Settings</h3>
+            <button id="closeSettingsBtn" class="btn btn-close-settings">X</button>
           </div>
           <div class="settings-body">
             <div class="setting-item">
@@ -95,12 +95,12 @@ function buildUI() {
             <div class="setting-item">
               <p class="setting-label"><span>Include in snapshot:</span></p>
               <div class="test-selector">
-                <label class="test-option"><input type="checkbox" id="test-cpu"       checked> 💻 CPU &amp; OS</label>
-                <label class="test-option"><input type="checkbox" id="test-memory"    checked> 🧠 Memory</label>
-                <label class="test-option"><input type="checkbox" id="test-processes" checked> ⚙️ Processes</label>
-                <label class="test-option"><input type="checkbox" id="test-network"   checked> 🌐 Network</label>
-                <label class="test-option"><input type="checkbox" id="test-disk"      checked> 💾 Disk &amp; FS</label>
-                <label class="test-option"><input type="checkbox" id="test-users"     checked> 👤 Users</label>
+                <label class="test-option"><input type="checkbox" id="test-cpu"       checked>CPU &amp; OS</label>
+                <label class="test-option"><input type="checkbox" id="test-memory"    checked>Memory</label>
+                <label class="test-option"><input type="checkbox" id="test-processes" checked>Processes</label>
+                <label class="test-option"><input type="checkbox" id="test-network"   checked>Network</label>
+                <label class="test-option"><input type="checkbox" id="test-disk"      checked>Disk &amp; FS</label>
+                <label class="test-option"><input type="checkbox" id="test-users"     checked>Users</label>
               </div>
               <p class="setting-desc">Select which categories to collect in snapshots</p>
             </div>
@@ -123,7 +123,7 @@ function buildUI() {
             />
 
             <button id="newSnapshotBtn" class="btn btn-primary">
-              📷 Take Snapshot
+              Take Snapshot
             </button>
           </div>
 
@@ -368,9 +368,9 @@ newSnapshotBtn.addEventListener('click', () => {
       await loadSnapshotList();
       emptyState.style.display = 'flex';
       snapshotDetail.style.display = 'none';
-      alert(`✅ Deleted ${result.count} snapshot(s).`);
+      alert(`Deleted ${result.count} snapshot(s).`);
     } else {
-      alert(`❌ Error: ${result.error}`);
+      alert(`Error: ${result.error}`);
     }
   });
 
@@ -388,20 +388,20 @@ newSnapshotBtn.addEventListener('click', () => {
   if (uploadBtn) uploadBtn.addEventListener('click', async () => {
     if (!currentSnapshot) return;
     uploadBtn.disabled = true;
-    uploadBtn.textContent = '⏳ Uploading...';
+    uploadBtn.textContent = ' Uploading...';
     try {
       const result = await ipcRenderer.invoke('upload-snapshot', currentSnapshot);
       if (result.success) {
-        uploadBtn.textContent = '✅ Uploaded!';
-        setTimeout(() => { uploadBtn.textContent = '☁️ Upload'; uploadBtn.disabled = false; }, 2000);
+        uploadBtn.textContent = ' Uploaded!';
+        setTimeout(() => { uploadBtn.textContent = ' Upload'; uploadBtn.disabled = false; }, 2000);
       } else {
         alert(`Upload failed: ${result.error}`);
-        uploadBtn.textContent = '☁️ Upload';
+        uploadBtn.textContent = ' Upload';
         uploadBtn.disabled = false;
       }
     } catch (e) {
       alert(`Upload error: ${e.message}`);
-      uploadBtn.textContent = '☁️ Upload';
+      uploadBtn.textContent = 'Upload';
       uploadBtn.disabled = false;
     }
   });
@@ -545,7 +545,7 @@ function displaySnapshot(data) {
   // Display integrity information
   if (data.integrity) {
     integrityInfo.innerHTML = `
-      ✓ Verified | SHA256: ${data.integrity.sha256_checksum.substring(0, 16)}... | 
+      Verified | SHA256: ${data.integrity.sha256_checksum.substring(0, 16)}... | 
       Signed: ${new Date(data.integrity.signed_at).toLocaleString()}
     `;
   }
@@ -555,7 +555,7 @@ function displaySnapshot(data) {
   if (badgesEl) {
     const run = data.metadata?.tests_run;
     if (run) {
-      const labels = { cpu: '💻 CPU & OS', memory: '🧠 Memory', processes: '⚙️ Processes', network: '🌐 Network', disk: '💾 Disk', users: '👤 Users' };
+      const labels = { cpu: 'CPU & OS', memory: 'Memory', processes: 'Processes', network: 'Network', disk: 'Disk', users: 'Users' };
       badgesEl.innerHTML = Object.entries(labels).map(([key, label]) =>
         `<span class="test-badge ${run[key] ? 'badge-on' : 'badge-off'}">${label}</span>`
       ).join('');
@@ -674,7 +674,7 @@ async function takeNewSnapshot(name, tests = {}) {
   }
   
   newSnapshotBtn.disabled = true;
-  newSnapshotBtn.textContent = '⏳ Taking snapshot...';
+  newSnapshotBtn.textContent = 'Taking snapshot...';
   
   try {
     const data = await ipcRenderer.invoke('take-snapshot', name, tests);
@@ -687,7 +687,7 @@ async function takeNewSnapshot(name, tests = {}) {
     alert('Error taking snapshot. Check console for details.');
   } finally {
     newSnapshotBtn.disabled = false;
-    newSnapshotBtn.textContent = '📷 Take Snapshot';
+    newSnapshotBtn.textContent = 'Take Snapshot';
   }
 }
 
@@ -731,7 +731,7 @@ async function performComparison(baselineName, afterName) {
       if (mismatched.length > 0) {
         const labels = { cpu: 'CPU & OS', memory: 'Memory', processes: 'Processes', network: 'Network', disk: 'Disk', users: 'Users' };
         const names = mismatched.map(k => labels[k] || k).join(', ');
-        alert(`⚠️ Warning: These snapshots collected different categories (${names}). Comparison results may be incomplete or misleading.`);
+        alert(`Warning: These snapshots collected different categories (${names}). Comparison results may be incomplete or misleading.`);
       }
     }
 
