@@ -1,34 +1,49 @@
 import './index.css';
 
-// ── IPC Bridge (uses preload.js contextBridge) ──────────────────────────────
 const ipc = window.ipc;
 
 let currentSnapshot = null;
 let allSnapshots = [];
+let lastCapturedName = null;
 
-// ── DOM Refs ─────────────────────────────────────────────────────────────────
+// ── DOM Refs ──────────────────────────────────────────────────────────────────
 let newSnapshotBtn, snapshotNameInput, snapshotList, emptyState, snapshotDetail;
 let detailTitle, detailTimestamp, deleteBtn, processSearch, processList;
 let compareSelect, compareBtn, comparisonView, integrityInfo, uploadBtn;
-let headerMeta, snapshotCount;
+let headerMeta, snapshotCount, snapshotPanel;
 
-// ── Toast Notification System ─────────────────────────────────────────────────
+// ── View Management ───────────────────────────────────────────────────────────
+// There are 3 views inside .main-view:
+//   #emptyState       — default, nothing selected
+//   #snapshotDetail   — viewing a snapshot
+//   #snapshotPanel    — take snapshot UI
+
+function showView(viewId) {
+  ['emptyState', 'snapshotDetail', 'snapshotPanel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById(viewId);
+  if (target) {
+    target.style.display = viewId === 'snapshotDetail' ? 'flex' : 'flex';
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(message, type = 'info', duration = 3500) {
   const container = document.getElementById('toastContainer');
   if (!container) return;
-
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `<div class="toast-dot"></div><span>${message}</span>`;
   container.appendChild(toast);
-
   setTimeout(() => {
     toast.style.animation = 'fadeOut 0.25s ease forwards';
     setTimeout(() => toast.remove(), 250);
   }, duration);
 }
 
-// ── Modal Confirm (replaces window.confirm) ───────────────────────────────────
+// ── Modal Confirm ─────────────────────────────────────────────────────────────
 function showConfirm(title, message) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -41,21 +56,11 @@ function showConfirm(title, message) {
           <button class="btn btn-secondary" id="modalCancel">Cancel</button>
           <button class="btn btn-danger" id="modalConfirm">Delete</button>
         </div>
-      </div>
-    `;
+      </div>`;
     document.body.appendChild(overlay);
-
-    overlay.querySelector('#modalConfirm').addEventListener('click', () => {
-      overlay.remove();
-      resolve(true);
-    });
-    overlay.querySelector('#modalCancel').addEventListener('click', () => {
-      overlay.remove();
-      resolve(false);
-    });
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) { overlay.remove(); resolve(false); }
-    });
+    overlay.querySelector('#modalConfirm').addEventListener('click', () => { overlay.remove(); resolve(true); });
+    overlay.querySelector('#modalCancel').addEventListener('click', () => { overlay.remove(); resolve(false); });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
   });
 }
 
@@ -63,40 +68,64 @@ function showConfirm(title, message) {
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
-  newSnapshotBtn   = document.getElementById('newSnapshotBtn');
+  newSnapshotBtn    = document.getElementById('newSnapshotBtn');
   snapshotNameInput = document.getElementById('snapshotName');
-  snapshotList     = document.getElementById('snapshotList');
-  emptyState       = document.getElementById('emptyState');
-  snapshotDetail   = document.getElementById('snapshotDetail');
-  detailTitle      = document.getElementById('detailTitle');
-  detailTimestamp  = document.getElementById('detailTimestamp');
-  deleteBtn        = document.getElementById('deleteBtn');
-  processSearch    = document.getElementById('processSearch');
-  processList      = document.getElementById('processList');
-  compareSelect    = document.getElementById('compareSelect');
-  compareBtn       = document.getElementById('compareBtn');
-  comparisonView   = document.getElementById('comparisonView');
-  integrityInfo    = document.getElementById('integrityInfo');
-  uploadBtn        = document.getElementById('uploadBtn');
-  headerMeta       = document.getElementById('headerMeta');
-  snapshotCount    = document.getElementById('snapshotCount');
+  snapshotList      = document.getElementById('snapshotList');
+  emptyState        = document.getElementById('emptyState');
+  snapshotDetail    = document.getElementById('snapshotDetail');
+  snapshotPanel     = document.getElementById('snapshotPanel');
+  detailTitle       = document.getElementById('detailTitle');
+  detailTimestamp   = document.getElementById('detailTimestamp');
+  deleteBtn         = document.getElementById('deleteBtn');
+  processSearch     = document.getElementById('processSearch');
+  processList       = document.getElementById('processList');
+  compareSelect     = document.getElementById('compareSelect');
+  compareBtn        = document.getElementById('compareBtn');
+  comparisonView    = document.getElementById('comparisonView');
+  integrityInfo     = document.getElementById('integrityInfo');
+  uploadBtn         = document.getElementById('uploadBtn');
+  headerMeta        = document.getElementById('headerMeta');
+  snapshotCount     = document.getElementById('snapshotCount');
 
-  if (!newSnapshotBtn) {
-    console.error('ERROR: Could not find newSnapshotBtn');
-    return;
-  }
+  if (!newSnapshotBtn) { console.error('ERROR: Could not find newSnapshotBtn'); return; }
 
-  // ── Event Listeners ────────────────────────────────────────────────────────
+  // ── Sidebar: open snapshot panel ──
   newSnapshotBtn.addEventListener('click', () => {
-    const name = snapshotNameInput.value.trim() || `snapshot_${Date.now()}`;
-    takeNewSnapshot(name);
-    snapshotNameInput.value = '';
+    openSnapshotPanel();
   });
 
-  snapshotNameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') newSnapshotBtn.click();
+  // ── Snapshot panel: back button ──
+  document.getElementById('snapPanelBackBtn')?.addEventListener('click', () => {
+    if (currentSnapshot) {
+      showView('snapshotDetail');
+      setHeaderMeta(`VIEWING: ${currentSnapshot}`);
+    } else {
+      showView('emptyState');
+      setHeaderMeta('READY');
+    }
+    resetSnapshotPanel();
   });
 
+  // ── Snapshot panel: capture button ──
+  document.getElementById('spCaptureBtn')?.addEventListener('click', () => {
+    const nameInput = document.getElementById('spNameInput');
+    const name = nameInput.value.trim() || `snapshot_${Date.now()}`;
+    nameInput.value = '';
+    runCapture(name);
+  });
+
+  document.getElementById('spNameInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('spCaptureBtn')?.click();
+  });
+
+  // ── Snapshot panel: "View Snapshot" after capture ──
+  document.getElementById('spViewBtn')?.addEventListener('click', () => {
+    if (lastCapturedName) {
+      loadSnapshot(lastCapturedName);
+    }
+  });
+
+  // ── Detail view event listeners ──
   deleteBtn?.addEventListener('click', () => {
     if (currentSnapshot) deleteSnapshot(currentSnapshot);
   });
@@ -144,7 +173,98 @@ function initializeApp() {
   loadSnapshotList();
 }
 
-// ── Header status indicator ───────────────────────────────────────────────────
+// ── Snapshot Panel ────────────────────────────────────────────────────────────
+function openSnapshotPanel() {
+  resetSnapshotPanel();
+  showView('snapshotPanel');
+  setHeaderMeta('CAPTURE');
+  document.getElementById('spNameInput')?.focus();
+}
+
+function resetSnapshotPanel() {
+  document.getElementById('spProgress').style.display = 'none';
+  document.getElementById('spResult').style.display = 'none';
+  document.getElementById('spCaptureBtn').disabled = false;
+  document.getElementById('spCaptureBtn').textContent = '⊕ Capture';
+  document.getElementById('spNameInput').value = '';
+  document.getElementById('spFill').style.width = '0%';
+  document.getElementById('spPct').textContent = '0%';
+  // Reset steps
+  document.querySelectorAll('.sp-step').forEach(el => {
+    el.classList.remove('active', 'done');
+    el.querySelector('.sp-step-dot').textContent = '○';
+  });
+}
+
+const STEP_KEYS = ['cpu', 'memory', 'os', 'disk', 'network', 'processes', 'sign'];
+
+function setStep(activeKey) {
+  const idx = STEP_KEYS.indexOf(activeKey);
+  document.querySelectorAll('.sp-step[data-step]').forEach((el, i) => {
+    el.classList.remove('active', 'done');
+    const dot = el.querySelector('.sp-step-dot');
+    if (i < idx)        { el.classList.add('done');   dot.textContent = '✓'; }
+    else if (i === idx) { el.classList.add('active'); dot.textContent = '●'; }
+    else                { dot.textContent = '○'; }
+  });
+  const pct = Math.round((idx / STEP_KEYS.length) * 100);
+  document.getElementById('spFill').style.width = pct + '%';
+  document.getElementById('spPct').textContent = pct + '%';
+}
+
+function markAllDone() {
+  document.querySelectorAll('.sp-step[data-step]').forEach(el => {
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.querySelector('.sp-step-dot').textContent = '✓';
+  });
+  document.getElementById('spFill').style.width = '100%';
+  document.getElementById('spPct').textContent = '100%';
+}
+
+async function runCapture(name) {
+  const captureBtn = document.getElementById('spCaptureBtn');
+  captureBtn.disabled = true;
+  captureBtn.textContent = 'Capturing...';
+  document.getElementById('spProgress').style.display = 'block';
+  document.getElementById('spResult').style.display = 'none';
+  setHeaderMeta('CAPTURING...');
+
+  // Animate steps in parallel with the real IPC call
+  const stepDelays = [0, 300, 600, 900, 1300, 1700, 2200];
+  STEP_KEYS.forEach((key, i) => {
+    setTimeout(() => setStep(key), stepDelays[i]);
+  });
+
+  try {
+    const data = await ipc.invoke('take-snapshot', name);
+    markAllDone();
+    lastCapturedName = name;
+    await loadSnapshotList();
+    showCaptureResult(name, data);
+    showToast(`Snapshot "${name}" saved`, 'success');
+    setHeaderMeta(`CAPTURED: ${name}`);
+  } catch (e) {
+    console.error('Error taking snapshot:', e);
+    showToast(`Snapshot failed: ${e.message}`, 'error');
+    setHeaderMeta('ERROR');
+    captureBtn.disabled = false;
+    captureBtn.textContent = '⊕ Capture';
+  }
+}
+
+function showCaptureResult(name, data) {
+  document.getElementById('spResult').style.display = 'flex';
+  document.getElementById('spResultName').textContent = name;
+  document.getElementById('spResultTime').textContent = new Date(data?.metadata?.timestamp || Date.now()).toLocaleString();
+  document.getElementById('spRstatProcs').textContent = data?.running_processes?.length ?? '—';
+  document.getElementById('spRstatPorts').textContent = data?.network?.listening_ports?.length ?? '—';
+  document.getElementById('spRstatIfaces').textContent = data?.network?.interfaces?.length ?? '—';
+  const cs = data?.integrity?.sha256_checksum ?? '';
+  document.getElementById('spChecksumVal').textContent = cs ? cs.substring(0, 32) + '…' : '—';
+}
+
+// ── Header status ─────────────────────────────────────────────────────────────
 function setHeaderMeta(text) {
   if (headerMeta) headerMeta.textContent = text;
 }
@@ -201,6 +321,7 @@ async function loadSnapshot(name) {
       renderSnapshotList();
       compareSelect.value = '';
       comparisonView.style.display = 'none';
+      showView('snapshotDetail');
       setHeaderMeta(`VIEWING: ${name}`);
     }
   } catch (e) {
@@ -211,9 +332,6 @@ async function loadSnapshot(name) {
 }
 
 function displaySnapshot(data) {
-  emptyState.style.display = 'none';
-  snapshotDetail.style.display = 'flex';
-
   detailTitle.textContent = currentSnapshot;
   detailTimestamp.textContent = new Date(data.metadata.timestamp).toLocaleString();
 
@@ -224,7 +342,6 @@ function displaySnapshot(data) {
     integrityInfo.style.display = 'none';
   }
 
-  // System info
   document.getElementById('cpuManufacturer').textContent = data.system.cpu_manufacturer || '—';
   document.getElementById('cpuBrand').textContent        = data.system.cpu_brand || '—';
   document.getElementById('cpuCores').textContent        = data.system.cpu_cores || '—';
@@ -232,7 +349,6 @@ function displaySnapshot(data) {
   document.getElementById('osInfo').textContent          = `${data.system.os_distro || '—'} ${data.system.os_release || ''}`;
   document.getElementById('diskInfo').textContent        = `${data.system.total_disk_size_gb} GB`;
 
-  // Network Interfaces
   const networkInterfacesEl = document.getElementById('networkInterfaces');
   networkInterfacesEl.innerHTML = '';
   if (data.network?.interfaces) {
@@ -244,7 +360,6 @@ function displaySnapshot(data) {
     });
   }
 
-  // Listening Ports
   const listeningPortsEl = document.getElementById('listeningPorts');
   listeningPortsEl.innerHTML = '';
   if (data.network?.listening_ports) {
@@ -256,7 +371,6 @@ function displaySnapshot(data) {
     });
   }
 
-  // File System
   const filesystemInfoEl = document.getElementById('filesystemInfo');
   filesystemInfoEl.innerHTML = '';
   if (data.system?.filesystem_info) {
@@ -281,23 +395,15 @@ function renderProcesses(processes) {
     const mem = proc.mem_usage || 0;
     const cpuClass = cpu > 10 ? 'high' : cpu > 3 ? 'med' : '';
     const memClass = mem > 10 ? 'high' : mem > 3 ? 'med' : '';
-
     const item = document.createElement('div');
     item.className = 'process-item';
     item.innerHTML = `
       <span class="process-name">${proc.name}</span>
       <span class="process-pid">${proc.pid}</span>
       <div class="process-stats">
-        <div class="stat">
-          <span class="stat-label">CPU</span>
-          <span class="stat-value ${cpuClass}">${cpu.toFixed(1)}%</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">MEM</span>
-          <span class="stat-value ${memClass}">${mem.toFixed(1)}%</span>
-        </div>
-      </div>
-    `;
+        <div class="stat"><span class="stat-label">CPU</span><span class="stat-value ${cpuClass}">${cpu.toFixed(1)}%</span></div>
+        <div class="stat"><span class="stat-label">MEM</span><span class="stat-value ${memClass}">${mem.toFixed(1)}%</span></div>
+      </div>`;
     processList.appendChild(item);
   });
 }
@@ -309,50 +415,17 @@ function filterProcesses(query) {
   });
 }
 
-// ── Take Snapshot ─────────────────────────────────────────────────────────────
-async function takeNewSnapshot(name) {
-  if (!ipc) {
-    showToast('IPC bridge not available', 'error');
-    return;
-  }
-
-  newSnapshotBtn.disabled = true;
-  newSnapshotBtn.textContent = '⏳ Capturing...';
-  setHeaderMeta('CAPTURING...');
-
-  try {
-    const data = await ipc.invoke('take-snapshot', name);
-    if (data) {
-      showToast(`Snapshot "${name}" saved`, 'success');
-      await loadSnapshotList();
-      await loadSnapshot(name);
-    }
-  } catch (e) {
-    console.error('Error taking snapshot:', e);
-    showToast(`Snapshot failed: ${e.message}`, 'error');
-    setHeaderMeta('ERROR');
-  } finally {
-    newSnapshotBtn.disabled = false;
-    newSnapshotBtn.textContent = '+ Take Snapshot';
-  }
-}
-
 // ── Delete Snapshot ───────────────────────────────────────────────────────────
 async function deleteSnapshot(name) {
-  const confirmed = await showConfirm(
-    'Delete Snapshot',
-    `Permanently delete "${name}"? This cannot be undone.`
-  );
+  const confirmed = await showConfirm('Delete Snapshot', `Permanently delete "${name}"? This cannot be undone.`);
   if (!confirmed) return;
-
   try {
     const success = await ipc.invoke('delete-snapshot', name);
     if (success) {
       showToast(`"${name}" deleted`, 'info');
       currentSnapshot = null;
       await loadSnapshotList();
-      emptyState.style.display = 'flex';
-      snapshotDetail.style.display = 'none';
+      showView('emptyState');
       setHeaderMeta('READY');
     } else {
       showToast('Delete failed', 'error');

@@ -21,12 +21,11 @@
     <div class="main-content">
       <div class="sidebar">
         <div class="snapshot-controls">
-          <button id="newSnapshotBtn" class="btn btn-primary" onclick="window.location.href='snapshot-panel.html'">
+          <button id="newSnapshotBtn" class="btn btn-primary">
             + Take Snapshot
           </button>
           <input type="text" id="snapshotName" placeholder="snapshot name..." class="input-field" />
         </div>
-
         <div class="snapshot-list-container">
           <div class="snapshot-list-header">
             <h2>Snapshots</h2>
@@ -39,11 +38,14 @@
       </div>
 
       <div class="main-view">
+
+        <!-- VIEW: EMPTY STATE -->
         <div id="emptyState" class="empty-state">
           <div class="empty-state-icon">⬡</div>
           <p>Select a snapshot to inspect</p>
         </div>
 
+        <!-- VIEW: SNAPSHOT DETAIL -->
         <div id="snapshotDetail" class="snapshot-detail" style="display: none;">
           <div class="detail-header">
             <div class="detail-title-block">
@@ -62,92 +64,43 @@
               <button id="deleteBtn" class="btn btn-danger">✕ Delete</button>
             </div>
           </div>
-
           <div id="comparisonView" class="comparison-view" style="display: none;">
             <div class="comparison-header">
               <h3>// Diff Results</h3>
               <button class="btn-close" id="closeComparisonBtn">close</button>
             </div>
             <div class="comparison-grid">
-              <div class="comparison-card">
-                <h4>New Processes</h4>
-                <div id="newProcessesList" class="comparison-list"></div>
-              </div>
-              <div class="comparison-card">
-                <h4>Removed Processes</h4>
-                <div id="removedProcessesList" class="comparison-list"></div>
-              </div>
-              <div class="comparison-card">
-                <h4>Resource Changes</h4>
-                <div id="processChangesList" class="comparison-list"></div>
-              </div>
-              <div class="comparison-card">
-                <h4>New Open Ports</h4>
-                <div id="newPortsList" class="comparison-list"></div>
-              </div>
+              <div class="comparison-card"><h4>New Processes</h4><div id="newProcessesList" class="comparison-list"></div></div>
+              <div class="comparison-card"><h4>Removed Processes</h4><div id="removedProcessesList" class="comparison-list"></div></div>
+              <div class="comparison-card"><h4>Resource Changes</h4><div id="processChangesList" class="comparison-list"></div></div>
+              <div class="comparison-card"><h4>New Open Ports</h4><div id="newPortsList" class="comparison-list"></div></div>
             </div>
           </div>
-
           <div class="detail-content">
             <section class="system-info">
-              <div class="section-header">
-                <h3>System</h3>
-              </div>
+              <div class="section-header"><h3>System</h3></div>
               <div class="info-grid">
-                <div class="info-item">
-                  <span class="label">CPU Manufacturer</span>
-                  <span id="cpuManufacturer" class="value">—</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">CPU Model</span>
-                  <span id="cpuBrand" class="value">—</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">Cores</span>
-                  <span id="cpuCores" class="value">—</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">Memory</span>
-                  <span id="totalMemory" class="value">—</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">OS</span>
-                  <span id="osInfo" class="value">—</span>
-                </div>
-                <div class="info-item">
-                  <span class="label">Disk Total</span>
-                  <span id="diskInfo" class="value">—</span>
-                </div>
+                <div class="info-item"><span class="label">CPU Manufacturer</span><span id="cpuManufacturer" class="value">—</span></div>
+                <div class="info-item"><span class="label">CPU Model</span><span id="cpuBrand" class="value">—</span></div>
+                <div class="info-item"><span class="label">Cores</span><span id="cpuCores" class="value">—</span></div>
+                <div class="info-item"><span class="label">Memory</span><span id="totalMemory" class="value">—</span></div>
+                <div class="info-item"><span class="label">OS</span><span id="osInfo" class="value">—</span></div>
+                <div class="info-item"><span class="label">Disk Total</span><span id="diskInfo" class="value">—</span></div>
               </div>
             </section>
-
             <section class="network-section">
-              <div class="section-header">
-                <h3>Network</h3>
-              </div>
+              <div class="section-header"><h3>Network</h3></div>
               <div class="network-info">
-                <div>
-                  <div class="network-subheader">Interfaces</div>
-                  <div id="networkInterfaces" class="details-list"></div>
-                </div>
-                <div>
-                  <div class="network-subheader">Listening Ports</div>
-                  <div id="listeningPorts" class="details-list"></div>
-                </div>
+                <div><div class="network-subheader">Interfaces</div><div id="networkInterfaces" class="details-list"></div></div>
+                <div><div class="network-subheader">Listening Ports</div><div id="listeningPorts" class="details-list"></div></div>
               </div>
             </section>
-
             <section class="filesystem-section">
-              <div class="section-header">
-                <h3>File System</h3>
-              </div>
+              <div class="section-header"><h3>File System</h3></div>
               <div id="filesystemInfo" class="details-list"></div>
             </section>
-
             <section class="processes-section">
-              <div class="section-header">
-                <h3>Processes</h3>
-              </div>
+              <div class="section-header"><h3>Processes</h3></div>
               <div class="search-bar">
                 <span class="search-icon">/</span>
                 <input type="text" id="processSearch" placeholder="filter processes..." class="input-field" />
@@ -158,12 +111,88 @@
             </section>
           </div>
         </div>
+
+        <!-- VIEW: TAKE SNAPSHOT PANEL -->
+        <div id="snapshotPanel" class="sp-view" style="display: none;">
+          <div class="sp-topbar">
+            <button id="snapPanelBackBtn" class="sp-back-btn">← Back</button>
+            <span class="sp-topbar-title">snapshot-capture</span>
+            <span class="sp-badge">SHA-256 Signed</span>
+          </div>
+          <div class="sp-body">
+            <div class="sp-feature-label">Feature</div>
+            <h1 class="sp-title">Take a System <em>Snapshot</em></h1>
+            <p class="sp-desc">Captures a complete point-in-time record of this machine's state. Every snapshot is cryptographically signed to guarantee integrity.</p>
+
+            <div class="sp-caps">
+              <div class="sp-cap">CPU & Memory</div>
+              <div class="sp-cap">OS & Kernel</div>
+              <div class="sp-cap">Disk Layout</div>
+              <div class="sp-cap">Network Interfaces</div>
+              <div class="sp-cap">Open Ports</div>
+              <div class="sp-cap">All Processes</div>
+            </div>
+
+            <div class="sp-integrity-row">
+              <span class="sp-lock">🔒</span>
+              <div>
+                <strong>SHA-256 Integrity Signing</strong>
+                <span>Every snapshot is hashed and signed at capture time. Tampering is detectable.</span>
+              </div>
+            </div>
+
+            <div class="sp-input-section">
+              <label class="sp-input-label">Snapshot Name</label>
+              <div class="sp-input-row">
+                <input class="sp-name-input" id="spNameInput" type="text" placeholder="e.g. baseline_before_deploy" autocomplete="off" spellcheck="false" />
+                <button class="sp-capture-btn" id="spCaptureBtn">⊕ Capture</button>
+              </div>
+            </div>
+
+            <!-- Progress (hidden until capture starts) -->
+            <div class="sp-progress" id="spProgress" style="display:none;">
+              <div class="sp-progress-header">
+                <span>Collecting system data</span>
+                <span class="sp-pct" id="spPct">0%</span>
+              </div>
+              <div class="sp-track"><div class="sp-fill" id="spFill"></div></div>
+              <div class="sp-steps" id="spSteps">
+                <div class="sp-step" data-step="cpu"><div class="sp-step-dot">○</div><span>CPU information</span></div>
+                <div class="sp-step" data-step="memory"><div class="sp-step-dot">○</div><span>Memory usage</span></div>
+                <div class="sp-step" data-step="os"><div class="sp-step-dot">○</div><span>OS & kernel details</span></div>
+                <div class="sp-step" data-step="disk"><div class="sp-step-dot">○</div><span>Disk layout & filesystems</span></div>
+                <div class="sp-step" data-step="network"><div class="sp-step-dot">○</div><span>Network interfaces & open ports</span></div>
+                <div class="sp-step" data-step="processes"><div class="sp-step-dot">○</div><span>Running processes</span></div>
+                <div class="sp-step" data-step="sign"><div class="sp-step-dot">○</div><span>SHA-256 signing & save</span></div>
+              </div>
+            </div>
+
+            <!-- Result (hidden until capture done) -->
+            <div class="sp-result" id="spResult" style="display:none;">
+              <div class="sp-result-check">✓</div>
+              <div class="sp-result-info">
+                <div class="sp-result-name" id="spResultName">—</div>
+                <div class="sp-result-time" id="spResultTime">—</div>
+                <div class="sp-result-stats">
+                  <div class="sp-rstat"><span class="sp-rstat-val" id="spRstatProcs">—</span><span class="sp-rstat-lbl">Processes</span></div>
+                  <div class="sp-rstat"><span class="sp-rstat-val" id="spRstatPorts">—</span><span class="sp-rstat-lbl">Open Ports</span></div>
+                  <div class="sp-rstat"><span class="sp-rstat-val" id="spRstatIfaces">—</span><span class="sp-rstat-lbl">Interfaces</span></div>
+                </div>
+                <div class="sp-checksum-row">
+                  <span class="sp-cs-label">SHA256</span>
+                  <span id="spChecksumVal">—</span>
+                </div>
+                <button class="sp-view-btn" id="spViewBtn">View Snapshot →</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 
-  <!-- Toast container -->
   <div class="toast-container" id="toastContainer"></div>
 </body>
-
 </html>
