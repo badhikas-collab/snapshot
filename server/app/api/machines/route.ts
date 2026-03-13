@@ -59,10 +59,14 @@ function estimateSnapshotSizeBytes(payload: unknown): number {
 }
 
 // GET /api/machines — list all machines with aggregated health metrics
+// Only fetches last N snapshots per machine to avoid massive queries
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Limit to last 10 snapshots globally to prevent egress explosion
+  const maxSnapshots = 10;
 
   // Try lightweight query first; fall back to fetching data column if new columns don't exist
   let rows: any[] = [];
@@ -71,13 +75,15 @@ export async function GET(req: NextRequest) {
   const { data, error } = await getSupabase()
     .from('snapshots')
     .select('id, machine_id, machine_name, snapshot_name, timestamp, snapshot_status, snapshot_size_bytes, snapshot_error')
-    .order('timestamp', { ascending: false });
+    .order('timestamp', { ascending: false })
+    .limit(maxSnapshots);
 
   if (error) {
     const fallback = await getSupabase()
       .from('snapshots')
       .select('id, machine_id, machine_name, snapshot_name, timestamp, data')
-      .order('timestamp', { ascending: false });
+      .order('timestamp', { ascending: false })
+      .limit(maxSnapshots);
 
     if (fallback.error) {
       return NextResponse.json({ error: fallback.error.message }, { status: 500 });
@@ -96,9 +102,9 @@ export async function GET(req: NextRequest) {
     statuses: SnapshotStatus[];
   }>();
 
-  for (const row of data || []) {
+  for (const row of rows) {
     const existing = machineMap.get(row.machine_id);
-    const status = normalizeStatus(row.snapshot_status);
+    const status = usedFallback ? extractStatus(row.data) : normalizeStatus(row.snapshot_status);
 
     if (existing) {
       existing.snapshots.push(row);

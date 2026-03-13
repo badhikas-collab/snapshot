@@ -169,7 +169,9 @@ export default function Dashboard() {
     };
 
     loadSnapshots();
-    const interval = setInterval(loadSnapshots, 60000); // poll every 60s, not 3s
+    // Poll every 5 minutes (300s) instead of 60s to minimize Supabase egress on free tier
+    // Users can manually refresh if they need latest data
+    const interval = setInterval(loadSnapshots, 300000);
 
     return () => {
       isMounted = false;
